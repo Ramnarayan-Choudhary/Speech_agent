@@ -1,0 +1,12 @@
+name: speech-to-text-indic
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pytorch::pytorch::*[build=*cuda*]
+  - pytorch::pytorch-cuda=11.8
+  - pytorch::torchaudio
+  - pip
+  - pip:
+    - -r requirements.txt

@@ -1,0 +1,43 @@
+# Core ML Stack
+torch>=2.0.0
+torchaudio>=2.0.0
+transformers>=4.30.0
+accelerate>=0.20.0
+peft>=0.4.0
+
+# Data Processing
+datasets[audio]>=2.13.0
+librosa>=0.10.0
+scipy>=1.10.0
+numpy>=1.24.0
+pandas>=1.5.0
+soundfile>=0.12.0
+
+# Evaluation
+evaluate>=0.4.0
+jiwer>=3.0.0
+scikit-learn>=1.2.0
+
+# UI & Demos
+gradio>=4.0.0
+streamlit>=1.24.0
+
+# Utilities
+huggingface-hub>=0.16.0
+python-dotenv>=1.0.0
+loguru>=0.7.0
+tqdm>=4.65.0
+pyyaml>=6.0
+
+# Logging & Monitoring
+tensorboard>=2.12.0
+wandb>=0.13.0
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Development
+black>=23.0.0
+isort>=5.12.0
+flake8>=6.0.0

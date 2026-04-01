@@ -1,0 +1,41 @@
+# Gujarati Configuration - CPU Training (Whisper-tiny)
+model_id: openai/whisper-tiny
+dataset_id: mozilla-foundation/common_voice_17_0
+language: gujarati
+language_code: gu
+repo_name: whisper-gujarati-lora-tiny-cpu
+
+n_train_samples: 500  # Small sample for CPU
+n_test_samples: 100
+
+# LoRA Configuration
+lora_config:
+  use_lora: true
+  lora_rank: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules: ["q_proj", "v_proj"]
+  bias: "none"
+
+# Training Hyperparameters
+training_hp:
+  push_to_hub: false
+  hub_private_repo: true
+  max_steps: 100
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  learning_rate: 5e-4
+  warmup_steps: 50
+  gradient_checkpointing: true
+  fp16: false
+  eval_strategy: "steps"
+  eval_steps: 50
+  per_device_eval_batch_size: 2
+  predict_with_generate: true
+  generation_max_length: 128
+  save_steps: 50
+  logging_steps: 10
+  load_best_model_at_end: true
+  save_total_limit: 2
+  metric_for_best_model: "wer"
+  greater_is_better: false
