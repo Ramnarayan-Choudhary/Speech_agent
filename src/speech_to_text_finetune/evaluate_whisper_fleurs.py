@@ -73,9 +73,15 @@ def evaluate_on_fleurs(
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse
     
-    model_id = sys.argv[1] if len(sys.argv) > 1 else "openai/whisper-small"
-    language = sys.argv[2] if len(sys.argv) > 2 else "hi_in"
+    parser = argparse.ArgumentParser(description="Evaluate model on FLEURS benchmark")
+    parser.add_argument("--model_id", type=str, default="openai/whisper-small",
+                        help="Model ID or local checkpoint path")
+    parser.add_argument("--language", type=str, default="hi_in",
+                        help="FLEURS language ID (e.g., hi_in, mr_in, gu_in)")
+    parser.add_argument("--output", type=str, default="eval_results.json",
+                        help="Output JSON file for results")
     
-    evaluate_on_fleurs(model_id, language)
+    args = parser.parse_args()
+    evaluate_on_fleurs(args.model_id, args.language, args.output)

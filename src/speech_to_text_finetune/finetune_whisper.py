@@ -13,14 +13,35 @@ from functools import partial
 import evaluate
 from loguru import logger
 
-from .config import load_config
-from .data_process import (
-    DataCollatorSpeechSeq2SeqWithPadding,
-    load_dataset_from_dataset_id,
-    process_dataset,
-    load_subset_of_dataset,
-)
-from .utils import compute_wer_cer_metrics, create_model_card, get_hf_username
+import sys
+import os
+
+# Support both direct execution and module execution
+if __name__ == "__main__" or __package__ is None:
+    # Add project root to path for direct execution
+    _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    if _project_root not in sys.path:
+        sys.path.insert(0, _project_root)
+    from src.speech_to_text_finetune.config import load_config
+    from src.speech_to_text_finetune.data_process import (
+        DataCollatorSpeechSeq2SeqWithPadding,
+        load_dataset_from_dataset_id,
+        load_dataset_from_local,
+        process_dataset,
+        load_subset_of_dataset,
+    )
+    from src.speech_to_text_finetune.utils import compute_wer_cer_metrics, create_model_card, get_hf_username
+else:
+    from .config import load_config
+    from .data_process import (
+        DataCollatorSpeechSeq2SeqWithPadding,
+        load_dataset_from_dataset_id,
+        load_dataset_from_local,
+        process_dataset,
+        load_subset_of_dataset,
+    )
+    from .utils import compute_wer_cer_metrics, create_model_card, get_hf_username
+
 
 try:
     from peft import get_peft_model, LoraConfig as PEFTLoRAConfig
@@ -61,14 +82,17 @@ def run_finetuning(config_path: str = "config.yaml"):
             lora_alpha=cfg.lora_config.lora_alpha,
             target_modules=cfg.lora_config.target_modules,
             lora_dropout=cfg.lora_config.lora_dropout,
-            bias=cfg.lora_config.bias,
-            task_type="SEQ_2_SEQ_LM"
+            bias=cfg.lora_config.bias
         )
         model = get_peft_model(model, lora_cfg)
         model.print_trainable_parameters()
     
-    # Data loading
-    dataset, proc_path = load_dataset_from_dataset_id(cfg.dataset_id, language_id)
+    # Data loading — prefer local dataset if specified
+    if cfg.local_dataset_path:
+        logger.info(f"Loading local dataset from: {cfg.local_dataset_path}")
+        dataset, proc_path = load_dataset_from_local(cfg.local_dataset_path)
+    else:
+        dataset, proc_path = load_dataset_from_dataset_id(cfg.dataset_id, language_id)
     dataset["train"] = load_subset_of_dataset(dataset["train"], cfg.n_train_samples)
     dataset["test"] = load_subset_of_dataset(dataset["test"], cfg.n_test_samples)
     
@@ -84,7 +108,8 @@ def run_finetuning(config_path: str = "config.yaml"):
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
     training_args = Seq2SeqTrainingArguments(
         output_dir=local_output_dir,
-        report_to=["tensorboard"],
+        report_to=["wandb"],
+        run_name=f"{cfg.language}-whisper-lora",
         **cfg.training_hp.model_dump()
     )
     
@@ -138,4 +163,9 @@ def run_finetuning(config_path: str = "config.yaml"):
 
 
 if __name__ == "__main__":
-    run_finetuning("example_configs/marathi/config_lora_gpu.yaml")
+    import argparse
+    parser = argparse.ArgumentParser(description="Fine-tune Whisper with LoRA")
+    parser.add_argument("--config", type=str, default="example_configs/marathi/config_lora_gpu.yaml",
+                        help="Path to YAML config file")
+    args = parser.parse_args()
+    run_finetuning(args.config)

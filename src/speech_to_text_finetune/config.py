@@ -1,7 +1,7 @@
 """Configuration schema for Whisper fine-tuning with LoRA."""
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List
 
 
@@ -21,6 +21,9 @@ class LoRAConfig(BaseModel):
 
 class TrainingConfig(BaseModel):
     """Training hyperparameters."""
+    
+    # Allow extra fields for forward-compatibility with Seq2SeqTrainingArguments
+    model_config = ConfigDict(extra="allow")
     
     push_to_hub: bool
     hub_private_repo: bool
@@ -42,15 +45,18 @@ class TrainingConfig(BaseModel):
     save_total_limit: int
     metric_for_best_model: str
     greater_is_better: bool
+    remove_unused_columns: Optional[bool] = None
+    label_names: Optional[List[str]] = None
 
 
 class Config(BaseModel):
     """Main configuration for fine-tuning."""
     
     model_id: str = Field(description="Whisper model ID")
-    dataset_id: str = Field(description="Dataset ID")
+    dataset_id: Optional[str] = Field(default=None, description="HuggingFace dataset ID")
+    local_dataset_path: Optional[str] = Field(default=None, description="Path to local dataset (saved via DatasetDict.save_to_disk)")
     language: str = Field(description="Language name")
-    language_code: Optional[str] = Field(description="Language code (e.g., 'hi', 'mr')")
+    language_code: Optional[str] = Field(default=None, description="Language code (e.g., 'hi', 'mr')")
     repo_name: str = Field(description="Repository name")
     n_train_samples: int = Field(default=-1, description="Number of training samples (-1 for all)")
     n_test_samples: int = Field(default=-1, description="Number of test samples (-1 for all)")

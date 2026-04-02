@@ -1,12 +1,26 @@
+"""End-to-end test for inference module."""
+
 import pytest
-from speech_to_text_finetune.inference import WhisperInference
+from src.speech_to_text_finetune.inference import WhisperInference
 
 
+@pytest.mark.skipif(
+    not __import__("torch").cuda.is_available(),
+    reason="Skipping model loading test on CPU-only machine (too slow without GPU)"
+)
 def test_whisper_inference_smoke():
-    # This test assumes model docker execution and availability is provided in CI.
-    # It should only ensure API works end-to-end for the class logic.
-    inference = WhisperInference(model_path="openai/whisper-tiny")
+    """Test WhisperInference class instantiation and method presence.
+    
+    Only runs when GPU is available since model loading is very slow on CPU.
+    """
+    inference = WhisperInference("openai/whisper-tiny")
 
-    # A small dummy audio generated in-memory can be used in a real test environment.
-    # For now we assert class instantiation and method presence.
     assert hasattr(inference, "transcribe")
+    assert hasattr(inference, "transcribe_batch")
+    assert hasattr(inference, "pipe")
+
+
+def test_whisper_inference_class_exists():
+    """Verify WhisperInference class has expected interface."""
+    assert hasattr(WhisperInference, "transcribe")
+    assert hasattr(WhisperInference, "transcribe_batch")

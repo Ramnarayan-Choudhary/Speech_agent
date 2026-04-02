@@ -1,4 +1,9 @@
-"""Dataset loading and processing pipeline."""
+"""Dataset loading and processing pipeline.
+
+Supports both:
+  1. HuggingFace Hub datasets (e.g., "mozilla-foundation/common_voice_17_0")
+  2. Local datasets saved via Dataset.save_to_disk() (e.g., "data/processed/marathi")
+"""
 
 import os
 from pathlib import Path
@@ -10,23 +15,58 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def load_dataset_from_local(local_path: str) -> Tuple[DatasetDict, str]:
+    """Load a pre-processed HuggingFace DatasetDict from disk.
+    
+    Args:
+        local_path: Path to a directory saved via DatasetDict.save_to_disk()
+    
+    Returns:
+        Tuple of (DatasetDict, proc_path)
+    """
+    logger.info(f"Loading local dataset from: {local_path}")
+    
+    if not os.path.exists(local_path):
+        raise FileNotFoundError(f"Local dataset not found: {local_path}")
+    
+    dataset = load_from_disk(local_path)
+    
+    if isinstance(dataset, Dataset):
+        # Single dataset — split it
+        split_data = dataset.train_test_split(test_size=0.2, seed=42)
+        dataset = DatasetDict({
+            "train": split_data["train"],
+            "test": split_data["test"],
+        })
+    
+    logger.info(f"Loaded: {len(dataset['train'])} train, {len(dataset['test'])} test")
+    return dataset, local_path
+
+
 def load_dataset_from_dataset_id(
     dataset_id: str,
     language_id: str,
 ) -> Tuple[DatasetDict, str]:
-    """Load dataset from HuggingFace."""
+    """Load dataset from HuggingFace Hub."""
     logger.info(f"Loading {dataset_id} for language {language_id}")
+    
+    # Get HF token from environment if available
+    hf_token = os.environ.get("HUGGINGFACE_TOKEN") or os.environ.get("HF_TOKEN")
     
     dataset = load_dataset(
         dataset_id,
         language_id,
         split="train",
+        streaming=False,
+        token=hf_token,
         trust_remote_code=True,
-        streaming=False
     )
     
+    # Cast audio to 16kHz (Whisper requirement)
+    dataset = dataset.cast_column("audio", Audio(sampling_rate=16000))
+    
     # Split into train/test
-    split_data = dataset.train_test_split(test_size=0.2)
+    split_data = dataset.train_test_split(test_size=0.2, seed=42)
     dataset_dict = DatasetDict({
         "train": split_data["train"],
         "test": split_data["test"]
@@ -66,11 +106,6 @@ def process_dataset(
         batched=False,
         batch_size=batch_size
     )
-    
-    # Save processed dataset
-    Path(proc_dataset_path).mkdir(parents=True, exist_ok=True)
-    dataset.save_to_disk(proc_dataset_path)
-    logger.info(f"Saved processed dataset to {proc_dataset_path}")
     
     return dataset
 

@@ -1,0 +1,115 @@
+{
+  "best_global_step": 100,
+  "best_metric": 0.4270557029177719,
+  "best_model_checkpoint": "./artifacts/whisper-marathi-lora-indicspeech/checkpoint-100",
+  "epoch": 20.0,
+  "eval_steps": 100,
+  "global_step": 100,
+  "is_hyper_param_search": false,
+  "is_local_process_zero": true,
+  "is_world_process_zero": true,
+  "log_history": [
+    {
+      "epoch": 2.0,
+      "grad_norm": 1.5088385343551636,
+      "learning_rate": 0.00017999999999999998,
+      "loss": 3.2622844696044924,
+      "step": 10
+    },
+    {
+      "epoch": 4.0,
+      "grad_norm": 0.4837998151779175,
+      "learning_rate": 0.00038,
+      "loss": 2.1627500534057615,
+      "step": 20
+    },
+    {
+      "epoch": 6.0,
+      "grad_norm": 0.4214872121810913,
+      "learning_rate": 0.00058,
+      "loss": 1.3993602752685548,
+      "step": 30
+    },
+    {
+      "epoch": 8.0,
+      "grad_norm": 0.3521314263343811,
+      "learning_rate": 0.0007800000000000001,
+      "loss": 1.1195491790771483,
+      "step": 40
+    },
+    {
+      "epoch": 10.0,
+      "grad_norm": 0.36380961537361145,
+      "learning_rate": 0.00098,
+      "loss": 0.897585678100586,
+      "step": 50
+    },
+    {
+      "epoch": 12.0,
+      "grad_norm": 0.25573083758354187,
+      "learning_rate": 0.00098,
+      "loss": 0.7196492195129395,
+      "step": 60
+    },
+    {
+      "epoch": 14.0,
+      "grad_norm": 0.38901394605636597,
+      "learning_rate": 0.0009577777777777778,
+      "loss": 0.5399045944213867,
+      "step": 70
+    },
+    {
+      "epoch": 16.0,
+      "grad_norm": 0.3085945248603821,
+      "learning_rate": 0.0009355555555555556,
+      "loss": 0.35683181285858157,
+      "step": 80
+    },
+    {
+      "epoch": 18.0,
+      "grad_norm": 0.4630047678947449,
+      "learning_rate": 0.0009133333333333334,
+      "loss": 0.1980992078781128,
+      "step": 90
+    },
+    {
+      "epoch": 20.0,
+      "grad_norm": 0.3274320960044861,
+      "learning_rate": 0.0008911111111111111,
+      "loss": 0.10819038152694702,
+      "step": 100
+    },
+    {
+      "epoch": 20.0,
+      "eval_cer": 0.22313084112149534,
+      "eval_loss": 0.5528485774993896,
+      "eval_model_preparation_time": 0.0077,
+      "eval_runtime": 5.6184,
+      "eval_samples_per_second": 7.12,
+      "eval_steps_per_second": 0.534,
+      "eval_wer": 0.4270557029177719,
+      "step": 100
+    }
+  ],
+  "logging_steps": 10,
+  "max_steps": 500,
+  "num_input_tokens_seen": 0,
+  "num_train_epochs": 100,
+  "save_steps": 100,
+  "stateful_callbacks": {
+    "TrainerControl": {
+      "args": {
+        "should_epoch_stop": false,
+        "should_evaluate": false,
+        "should_log": false,
+        "should_save": true,
+        "should_training_stop": false
+      },
+      "attributes": {}
+    }
+  },
+  "total_flos": 9.27550144512e+17,
+  "train_batch_size": 16,
+  "trial_name": null,
+  "trial_params": null
+}
