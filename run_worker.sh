@@ -1,7 +1,7 @@
 #!/bin/bash
-source /home/ramnarayan.ramniwas/MS_projects/Speech_agent/venv/bin/activate
+source /home/ramnarayan.ramniwas/MS_projects/speech/Speech_agent/venv/bin/activate
 export LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64:$LD_LIBRARY_PATH
-cd /home/ramnarayan.ramniwas/MS_projects/Speech_agent
+cd /home/ramnarayan.ramniwas/MS_projects/speech/Speech_agent
 
 echo "=== Node Information ==="
 echo "Python: $(which python)"
