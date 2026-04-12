@@ -48,6 +48,7 @@ class IndicTTSEngine:
         self.torch_dtype = torch.float16 if self.device == "cuda" else torch.float32
         self.model = None
         self.tokenizer = None
+        self.description_tokenizer = None
         self.model_id = model_id
         self._loaded = False
 
@@ -70,6 +71,11 @@ class IndicTTSEngine:
 
             self.tokenizer = AutoTokenizer.from_pretrained(
                 self.model_id,
+                padding_side="left",
+            )
+            
+            self.description_tokenizer = AutoTokenizer.from_pretrained(
+                "google/flan-t5-large",
                 padding_side="left",
             )
 
@@ -110,8 +116,8 @@ class IndicTTSEngine:
         # Resolve voice description
         description = VOICE_PRESETS.get(voice_preset, voice_preset)
 
-        # Tokenize description and prompt SEPARATELY to avoid pad/eos collision
-        desc_tokens = self.tokenizer(description, return_tensors="pt")
+        # Tokenize description and prompt SEPARATELY using their respective tokenizers
+        desc_tokens = self.description_tokenizer(description, return_tensors="pt")
         prompt_tokens = self.tokenizer(text, return_tensors="pt")
 
         input_ids = desc_tokens.input_ids.to(self.device)
