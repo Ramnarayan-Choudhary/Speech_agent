@@ -1,0 +1,75 @@
+{
+  "timestamp": "2026-04-24T23:33:32.295524",
+  "config": {
+    "base_model": "openai/whisper-large-v3-turbo",
+    "num_samples": 5,
+    "languages": [
+      "mr_in",
+      "gu_in",
+      "en_us"
+    ],
+    "skip_tts": true,
+    "skip_llm": true,
+    "skip_routing": false,
+    "device": "cuda",
+    "gpu_name": "NVIDIA RTX 5000 Ada Generation"
+  },
+  "stt_accuracy": {
+    "mr_in": {
+      "wer": 0.7625,
+      "cer": 0.2467,
+      "num_samples": 5,
+      "avg_latency_s": 9.108
+    },
+    "gu_in": {
+      "wer": 0.7212,
+      "cer": 0.3301,
+      "num_samples": 5,
+      "avg_latency_s": 10.822
+    },
+    "en_us": {
+      "wer": 0.233,
+      "cer": 0.081,
+      "num_samples": 5,
+      "avg_latency_s": 1.783
+    }
+  },
+  "routing_accuracy": {
+    "overall": 0.7333,
+    "per_lang": {
+      "mr_in": {
+        "accuracy": 0.6,
+        "correct": 3,
+        "total": 5
+      },
+      "gu_in": {
+        "accuracy": 0.6,
+        "correct": 3,
+        "total": 5
+      },
+      "en_us": {
+        "accuracy": 1.0,
+        "correct": 5,
+        "total": 5
+      }
+    }
+  },
+  "translation_quality": {
+    "status": "skipped",
+    "reason": "user flag --skip_llm"
+  },
+  "tts_health": {
+    "status": "skipped",
+    "reason": "user flag --skip_tts"
+  },
+  "latency": {
+    "language_profiled": "mr_in",
+    "num_samples": 5,
+    "avg_total_s": 4.234,
+    "median_total_s": 4.112,
+    "min_total_s": 2.461,
+    "max_total_s": 6.935,
+    "std_total_s": 1.533
+  },
+  "output_path": "/home/ramnarayan.ramniwas/MS_projects/speech/Speech_agent/eval_results/full_pipeline_report_20260424_234233.json"
+}

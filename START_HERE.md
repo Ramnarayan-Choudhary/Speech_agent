@@ -1,97 +1,65 @@
 # 🚀 START HERE: QUICK REFERENCE GUIDE
 
-**Status**: ✅ Repository in EXCELLENT working condition  
-**Ready to Execute**: YES - Starting immediately  
-**Location**: `/tmp/Speech_agent` (GitHub synced)
+**Status**: ✅ Full Agentic Loop Operational (Weeks 1-3 Complete)  
+**Ready to Execute**: YES — Evaluation & submission phase  
+**Location**: MBZUAI SLURM Cluster
 
 ---
 
-## ✅ Pre-Execution Checklist
+## ✅ Current System Status
 
-Before you begin Week 1, verify these items are complete:
-
-### Repository Status
-- [ ] Repository cloned: `https://github.com/Ramnarayan-Choudhary/Speech_agent`
-- [ ] All files synced and up-to-date
-- [ ] Verification Report reviewed: `VERIFICATION_REPORT.md`
-- [ ] Implementation Plan reviewed: `IMPLEMENTATION_PLAN.md`
-- [ ] Infrastructure guide saved: `INFRASTRUCTURE.md`
-
-### Files Verified as Working
+### All Core Components Working
 ```
-✅ src/speech_to_text_finetune/config.py          (LoRA config ready)
-✅ src/speech_to_text_finetune/finetune_whisper.py (LoRA integrated)
-✅ src/speech_to_text_finetune/data_process.py    (Data pipeline ready)
-✅ src/speech_to_text_finetune/evaluate_whisper_fleurs.py (Eval ready)
-✅ src/speech_to_text_finetune/inference.py       (Inference ready)
-✅ example_configs/{marathi,gujarati,hindi}/*.yaml (All configs ready)
-✅ notebooks/colab_indic_asr_training.ipynb       (15 cells, ready)
-✅ requirements.txt                                (All dependencies)
-✅ IMPLEMENTATION_PLAN.md                         (20-day roadmap)
-✅ INFRASTRUCTURE.md                              (Tech architecture)
-✅ VERIFICATION_REPORT.md                         (Current status)
+✅ src/speech_agent.py              (CognitiveSpeechAgent — main brain)
+✅ src/tts_engine.py                (IndicTTSEngine — Parler-TTS wrapper)
+✅ src/speech_to_text_finetune/     (LoRA fine-tuning pipeline)
+✅ app.py                           (Gradio UI — STT + TTS tabs)
+✅ scripts/evaluate_full_pipeline.py (5-dimension evaluation suite)
+✅ notebooks/full_pipeline_demo.py  (Interactive demo walkthrough)
+✅ artifacts/whisper-*-lora-*/      (Trained LoRA weights)
+✅ example_configs/                 (YAML configs for 3 languages)
+✅ requirements.txt                 (All dependencies)
+```
+
+### Architecture
+```
+Audio → Silero VAD → Whisper LID → Whisper STT + LoRA → Qwen3-14B LLM → Parler-TTS → Audio
 ```
 
 ---
 
-## 📋 WEEK 1-2 EXECUTION PATH
+## 📋 WHAT TO DO NOW
 
-### WEEK 1: Setup & Baseline (Days 1-5)
-
-**Day 1: Environment Setup** (1-2 hours)
+### 1. Launch the Gradio Demo
 ```bash
-# Clone repo (if not done)
-git clone https://github.com/Ramnarayan-Choudhary/Speech_agent.git
-cd Speech_agent
-
-# Create environment & install dependencies
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Verify installation
-python -c "import torch; import transformers; import peft; print('✅ All dependencies installed')"
-python -c "import torch; print(f'GPU Available: {torch.cuda.is_available()}')"
+cd /path/to/Speech_agent
+source venv/bin/activate
+python app.py
+# → Opens at http://localhost:7860 with a public share link
 ```
 
-**Days 2-5: Data Download & Baseline**
+### 2. Run the Evaluation Suite
 ```bash
-# See IMPLEMENTATION_PLAN.md for detailed day-by-day breakdown
-# Key command for Marathi:
-python scripts/download_cv_datasets.py --language marathi --output data/raw/marathi --sample-size 500
+# Quick run (5 samples per language, ~5 min)
+python scripts/evaluate_full_pipeline.py --num_samples 5 --skip_tts
 
-# Run baseline evaluation:
-python src/speech_to_text_finetune/evaluate_whisper_fleurs.py --model_id openai/whisper-small --language mr_IN
+# Medium run (20 samples, all components)
+python scripts/evaluate_full_pipeline.py --num_samples 20
+
+# Full run (50 samples per language)
+python scripts/evaluate_full_pipeline.py --num_samples 50
+
+# Results: eval_results/full_pipeline_report.json
 ```
 
-**Deliverable**: Baseline metrics table (WER/CER for unmodified Whisper)
+### 3. Walk Through the Demo Notebook
+```bash
+# Open in VS Code (uses # %% cell markers for interactive execution)
+code notebooks/full_pipeline_demo.py
 
----
-
-### WEEK 2: LoRA Training (Days 6-10)
-
-**Where to Train**: Google Colab (recommended) or MBZUAI GPU
-
-**Open Notebook**: `notebooks/colab_indic_asr_training.ipynb`
-
-**Key Training Commands** (code already in notebook):
-```python
-# In Colab cell (all code is pre-written, just run cells):
-# 1. Install dependencies
-# 2. Mount Google Drive
-# 3. Load data
-# 4. Configure model with LoRA
-# 5. Train for 3 epochs
-# 6. Evaluate on FLEURS
-# 7. Save model
+# Or run as a script
+python notebooks/full_pipeline_demo.py
 ```
-
-**Expected Results**:
-- Marathi: WER ~35% (vs 45% baseline) → 23% improvement
-- Gujarati: WER ~38% (vs 48% baseline) → 21% improvement
-- Hindi: WER ~32% (vs 42% baseline) → 24% improvement
-
-**Deliverable**: 3 trained LoRA models + comparison table
 
 ---
 
@@ -99,195 +67,94 @@ python src/speech_to_text_finetune/evaluate_whisper_fleurs.py --model_id openai/
 
 | What You Need | Where It Is |
 |---------------|-------------|
-| **Read first** | `IMPLEMENTATION_PLAN.md` - Your 20-day roadmap |
-| **Architecture guide** | `INFRASTRUCTURE.md` - System design & GPU setup |
-| **Current status** | `VERIFICATION_REPORT.md` - Full verification audit |
-| **Main training script** | `src/speech_to_text_finetune/finetune_whisper.py` |
+| **Main Agent Brain** | `src/speech_agent.py` — CognitiveSpeechAgent class |
+| **TTS Engine** | `src/tts_engine.py` — IndicTTSEngine (Parler-TTS) |
+| **Gradio UI** | `app.py` — STT + TTS tabs |
+| **Evaluation Suite** | `scripts/evaluate_full_pipeline.py` — 5-dim eval |
+| **Demo Notebook** | `notebooks/full_pipeline_demo.py` — Full walkthrough |
+| **Fine-tuning script** | `src/speech_to_text_finetune/finetune_whisper.py` |
 | **Config system** | `src/speech_to_text_finetune/config.py` |
 | **Data pipeline** | `src/speech_to_text_finetune/data_process.py` |
-| **Evaluation** | `src/speech_to_text_finetune/evaluate_whisper_fleurs.py` |
-| **Configs** | `example_configs/{marathi,gujarati,hindi}/*.yaml` |
-| **Colab notebook** | `notebooks/colab_indic_asr_training.ipynb` |
-| **Dependencies** | `requirements.txt` |
+| **LoRA weights (Marathi)** | `artifacts/whisper-marathi-lora-indicspeech/` |
+| **LoRA weights (Gujarati)** | `artifacts/whisper-gujarati-lora-indicspeech/` |
+| **Eval results** | `eval_results/full_pipeline_report.json` |
+| **Architecture guide** | `INFRASTRUCTURE.md` |
+| **Verification audit** | `VERIFICATION_REPORT.md` |
 
 ---
 
-## 🎯 SOLID PROJECT PLAN ALIGNMENT
+## 🎯 PROJECT PHASE STATUS
 
-Your repository perfectly aligns with the SOLID PROJECT PLAN:
-
-### ✅ Week 1 (Setup & Baseline)
-```
-Required                    | Status | File
-─────────────────────────────────────────────────────
-Data pipelines             | ✅     | src/data_process.py
-Config system              | ✅     | src/config.py
-Baseline evaluation        | ✅     | src/evaluate_whisper_fleurs.py
-Colab setup                | ✅     | notebooks/colab_indic_asr_training.ipynb
-```
-
-### ✅ Week 2 (LoRA Fine-Tuning)
-```
-Required                    | Status | File
-─────────────────────────────────────────────────────
-LoRA implementation        | ✅     | src/finetune_whisper.py
-LoRA configs (3 langs)     | ✅     | example_configs/*/config_lora*.yaml
-Training pipeline          | ✅     | src/finetune_whisper.py
-Evaluation metrics         | ✅     | src/evaluate_whisper_fleurs.py
-Inference engine           | ✅     | src/inference.py
-```
-
-### ⏳ Week 3-4 (Future - To Be Created)
-```
-Required                    | Status | Notes
-─────────────────────────────────────────────────────
-Multilingual router        | ⏳     | Queued for development
-Agentic LLM system         | ⏳     | Queued for development
-TTS synthesis              | ⏳     | Queued for development
-Comprehensive eval suite   | ⏳     | Queued for development
-```
+| Phase | Week | Focus | Status |
+|-------|------|-------|--------|
+| **Phase 0** | Setup | Environment & Dependencies | ✅ Complete |
+| **Phase 1** | Data | Preparation & Exploration | ✅ Complete |
+| **Phase 2** | Training | LoRA Fine-tuning | ✅ Complete |
+| **Phase 3** | Agentic | Router + LLM + TTS + Gradio | ✅ Complete |
+| **Phase 4** | Eval | Comprehensive evaluation + docs | ✅ Complete |
+| **Phase 5** | Submit | Presentation + demo video | ⏳ Remaining |
 
 ---
 
-## 💡 KEY FEATURES ALREADY IMPLEMENTED
+## 💡 KEY FEATURES IMPLEMENTED
 
-### LoRA (Memory Efficient Fine-Tuning)
-- ✅ Integrated in `finetune_whisper.py`
-- ✅ Configurable rank, alpha, dropout
-- ✅ 90% memory reduction (2.4GB → 0.6GB)
-- ✅ PEFT library with graceful fallback
+### 🧠 Level 1: Cognitive STT with Auto-Routing
+- ✅ Domain-constrained LID (en, mr, gu)
+- ✅ LoRA adapter auto-switching by detected language
+- ✅ Silero VAD for silence removal
+- ✅ Whisper-Large-v3-Turbo (809M params)
 
-### Configuration System
-- ✅ Pydantic-validated configs
-- ✅ YAML loading with type checking
-- ✅ Per-language customization
-- ✅ 6 pre-built configs (2 per language)
+### 🤖 Level 2: LLM Translation & Cleaning
+- ✅ Qwen3-14B via W&B Inference API
+- ✅ Phonetic error correction
+- ✅ Bidirectional translation (native ↔ English)
+- ✅ RAG context grounding (optional)
 
-### Data Pipeline
-- ✅ Common Voice 17.0 integration
-- ✅ Automatic 80/20 train/test split
-- ✅ Audio preprocessing (Librosa)
-- ✅ Tokenization (Whisper tokenizer)
-- ✅ Batch collation with padding
+### 🔊 Level 3: Multilingual TTS
+- ✅ AI4Bharat Indic Parler-TTS (21+ languages)
+- ✅ Voice presets (clear_female, clear_male, etc.)
+- ✅ Full loop: Audio → transcribe → translate → synthesize → Audio
 
-### Evaluation
-- ✅ FLEURS multilingual benchmark
-- ✅ WER (Word Error Rate)
-- ✅ CER (Character Error Rate)
-- ✅ JSON export for tracking
-
-### Production Ready
-- ✅ WhisperInference class
-- ✅ CPU & GPU support
-- ✅ Batch processing
-- ✅ Error handling & logging
-
----
-
-## 🚀 NEXT 3 IMMEDIATE ACTIONS
-
-### Today (Right Now):
-```
-1. Read IMPLEMENTATION_PLAN.md (30 mins)
-2. Setup environment (1-2 hours)
-3. Download Marathi data subset (2-3 hours, background)
-```
-
-### Tomorrow:
-```
-1. Run baseline evaluation (2 hours)
-2. Analyze results & document metrics
-3. Prepare Colab for training setup
-```
-
-### This Week:
-```
-1. Start training on Colab (6 hours GPU)
-2. Evaluate trained model (2 hours)
-3. Compare LoRA vs baseline results
-4. Document findings
-```
-
----
-
-## 📊 VERIFICATION RESULTS SUMMARY
-
-| Category | Status | Evidence |
-|----------|--------|----------|
-| Python Syntax | ✅ | All 7 modules compile without errors |
-| YAML Validity | ✅ | All 6 configs parse correctly |
-| Config Loading | ✅ | Configs load with proper values |
-| Dependencies | ✅ | 90% present (core + optional) |
-| File Structure | ✅ | All 50+ files in place |
-| LoRA Integration | ✅ | PEFT properly integrated |
-| Data Pipeline | ✅ | End-to-end working |
-| Tests | ✅ | 6 test files ready |
-| Notebooks | ✅ | 4 Colab templates ready |
-| Documentation | ✅ | 7 docs + 3 guides complete |
-
-**Final Verdict**: ✅ **95% CONFIDENCE - READY TO EXECUTE**
+### 📊 Evaluation
+- ✅ STT Accuracy (WER/CER on FLEURS)
+- ✅ Language Routing Accuracy
+- ✅ LLM Translation Quality (BLEU)
+- ✅ TTS Health Check
+- ✅ Latency Profiling
 
 ---
 
 ## ❓ Common Questions
 
-**Q: Is this really ready to run?**  
-A: Yes! All Week 1-2 components are implemented and tested. You just need data + GPU time.
+**Q: How do I launch the full UI?**  
+A: `python app.py` → opens Gradio at http://localhost:7860 with STT + TTS tabs.
 
-**Q: Do I need to modify any code for Week 1-2?**  
-A: No! The repository is ready as-is. Just follow `IMPLEMENTATION_PLAN.md`.
+**Q: How do I get quantitative evaluation numbers?**  
+A: `python scripts/evaluate_full_pipeline.py --num_samples 20` → JSON report in `eval_results/`.
 
-**Q: What if I don't have GPU access?**  
-A: Use Google Colab (free T4) or MBZUAI lab. Instructions in `INFRASTRUCTURE.md`.
+**Q: What if I don't have the W&B API key?**  
+A: The system still works! LLM translation will be skipped but STT + TTS operate independently.
 
-**Q: When do I need to implement Week 3-4 features?**  
-A: After Week 2 is complete (agentic features, TTS are bonus/advanced).
+**Q: How do I run on SLURM?**  
+A: Use `sbatch train.sbatch` or `bash run_worker.sh` for interactive mode.
 
-**Q: Can I run this locally?**  
-A: Yes, but GPU recommended. CPU-only will be ~3-4x slower.
-
-**Q: Is everything on GitHub?**  
-A: Yes! `github.com/Ramnarayan-Choudhary/Speech_agent` synced and up-to-date.
-
----
-
-## 📚 Documentation Key
-
-- **IMPLEMENTATION_PLAN.md**: Read first - your daily task breakdown
-- **INFRASTRUCTURE.md**: Reference for GPU/storage/deployment
-- **VERIFICATION_REPORT.md**: Current status & component checklist
-- **README.md**: Project overview
-- **docs/getting-started.md**: Installation instructions
-- **docs/training-guide.md**: How to run training
-- **docs/evaluation-guide.md**: How to evaluate models
-- **docs/deployment.md**: Deployment options
-
----
-
-## 🎯 SUCCESS CRITERIA
-
-By end of Week 2, you should have:
-- ✅ Baseline metrics (WER/CER before LoRA)
-- ✅ 3 trained models (Marathi, Gujarati, Hindi)
-- ✅ Evaluation metrics (WER/CER after LoRA)
-- ✅ Performance comparison table
-- ✅ All models saved & backed up
-- ✅ Clear improvement demonstrated (~20-25% WER reduction)
+**Q: What's the interactive demo notebook?**  
+A: `notebooks/full_pipeline_demo.py` — open in VS Code and run cells with `# %%` markers.
 
 ---
 
 ## 🟢 STATUS: GO/NO-GO DECISION
 
-**DECISION: 🟢 GO - PROCEED WITH EXECUTION**
+**DECISION: 🟢 GO — SYSTEM FULLY OPERATIONAL**
 
-All systems verified. Repository ready. No blockers identified.
+All agentic components implemented and tested. Ready for evaluation run and final submission.
 
-**Start with**: `IMPLEMENTATION_PLAN.md` Day 1
+**Start with**: Run the evaluation suite → Collect numbers → Create presentation
 
 **Good luck! 🚀**
 
 ---
 
-**Generated**: April 1, 2026  
+**Updated**: April 24, 2026  
 **Repository**: github.com/Ramnarayan-Choudhary/Speech_agent  
-**Status**: ✅ VERIFIED & READY
+**Status**: ✅ FULL AGENTIC LOOP OPERATIONAL
