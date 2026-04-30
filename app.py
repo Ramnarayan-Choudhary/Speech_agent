@@ -212,5 +212,6 @@ with gr.Blocks(theme=gr.themes.Soft(primary_hue="blue")) as demo:
 
 if __name__ == "__main__":
     logger.info("Spinning up Public UI Server...")
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    port = int(os.environ.get("GRADIO_SERVER_PORT", 7860))
+    demo.launch(server_name="0.0.0.0", server_port=port, share=True)
 
