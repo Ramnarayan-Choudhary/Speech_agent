@@ -1,0 +1,36 @@
+% ═══════════════════════════════════════════════════════════════
+%  1. Introduction
+% ═══════════════════════════════════════════════════════════════
+
+\section{Introduction}
+\label{sec:intro}
+
+Automatic speech recognition has progressed remarkably in recent years, with large-scale models such as OpenAI's Whisper~\cite{radford2023whisper} trained on hundreds of thousands of hours of multilingual audio. These models perform well on major languages, but their accuracy drops sharply for low-resource languages that are underrepresented in their training data~\cite{joshi2020state}. India alone is home to over 780 languages, and many of them---including widely spoken ones like Marathi (83 million speakers) and Gujarati (56 million speakers)---remain poorly served by current speech technology.
+
+A practical speech system for Indian users needs to do more than just transcribe. In many real-world scenarios, a farmer dictating crop damage reports in Gujarati, a healthcare worker documenting patient notes in Marathi, or a government office processing multilingual requests, the system must figure out what language is being spoken, transcribe it accurately, and often translate it to a common language like English. If the system can also speak the result back, we get a full speech-to-speech loop that removes the barrier of text literacy entirely.
+
+Building such a system raises several concrete research questions that motivated this work:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Can parameter-efficient fine-tuning work with very little data?} Full fine-tuning of a 809-million-parameter model for each language is expensive and impractical. LoRA adapters~\cite{hu2022lora} offer a lighter alternative, but it is not obvious whether they can meaningfully improve Indic ASR with only 160 training samples per language.
+
+    \item \textbf{Can the model's own decoder identify the language without an external classifier?} Standard Whisper language identification checks 99+ languages and frequently confuses phonetically similar ones. We wanted to see if constraining the search space to just the three languages we care about would make decoder-logit-based identification reliable enough.
+
+    \item \textbf{Does LLM post-processing actually fix phonetic errors, or does it just paraphrase?} Acoustic models produce characteristic mistakes---swapping similar-sounding characters, inserting ghost text from background noise. An LLM might correct these, but it might also introduce new errors. We needed to measure this.
+\end{enumerate}
+
+To explore these questions, we built a five-layer cognitive speech agent that handles the complete flow from microphone input to spoken output. The system integrates voice activity detection, domain-constrained language identification, LoRA-adapted speech-to-text, LLM-based error correction and translation, and neural text-to-speech synthesis into a unified pipeline accessible through a web interface.
+
+\paragraph{Contributions.} The main contributions of this work are:
+
+\begin{itemize}[leftmargin=*]
+    \item A \textbf{full speech-to-speech pipeline} for Marathi, Gujarati, and English that runs end-to-end on a single GPU, including VAD preprocessing, automatic language routing, transcription, translation, and speech synthesis.
+
+    \item A \textbf{domain-constrained language identification} method that restricts Whisper's decoder logits to a known set of target languages, achieving 100\% accuracy for English and exposing a fundamental acoustic confusion boundary between Marathi and Gujarati.
+
+    \item \textbf{LoRA adapters for Indic ASR} trained with just 160 samples per language, demonstrating that even minimal fine-tuning can suppress hallucination behavior and improve in-domain recognition, while also quantifying the out-of-distribution degradation when these adapters encounter diverse test data.
+
+    \item A \textbf{systematic five-dimensional evaluation} covering STT accuracy, language routing, translation quality, TTS health, and end-to-end latency, along with ablation studies on domain mismatch and efficiency profiles.
+\end{itemize}
+
+The rest of this report is organized as follows. Section~\ref{sec:related} reviews relevant prior work. Section~\ref{sec:method} describes the architecture and each component in detail. Section~\ref{sec:setup} presents the experimental setup. Section~\ref{sec:results} reports our quantitative results, and Section~\ref{sec:ablation} provides ablation studies. We discuss limitations and insights in Section~\ref{sec:discussion}, and conclude in Section~\ref{sec:conclusion}.

@@ -1,0 +1,179 @@
+% ═══════════════════════════════════════════════════════════════
+%  3. Methodology
+% ═══════════════════════════════════════════════════════════════
+
+\section{Methodology}
+\label{sec:method}
+
+Our system processes audio through five sequential stages: voice activity detection, language identification, speech-to-text transcription, LLM-based translation and error correction, and text-to-speech synthesis. Figure~\ref{fig:architecture} shows the overall architecture. Each component is described in detail below.
+
+% ─── Architecture Diagram ────────────────────────────────────────────────────
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    node distance=0.6cm and 0.8cm,
+    block/.style={
+        rectangle, rounded corners=3pt,
+        draw=mbzuaiblue, thick,
+        fill=mbzuaiblue!8,
+        text width=3.8cm, minimum height=1.0cm,
+        align=center, font=\small
+    },
+    smallblock/.style={
+        rectangle, rounded corners=2pt,
+        draw=darkgreen, thick,
+        fill=darkgreen!8,
+        text width=2.8cm, minimum height=0.7cm,
+        align=center, font=\footnotesize
+    },
+    arrow/.style={-{Stealth[length=5pt]}, thick, mbzuaiblue},
+    label/.style={font=\tiny\itshape, text=gray}
+]
+
+% Main flow
+\node[block] (audio) {Audio Input\\[-2pt]\footnotesize (16\,kHz mono)};
+\node[block, right=of audio] (vad) {Silero VAD\\[-2pt]\footnotesize Silence trimming};
+\node[block, right=of vad] (lid) {Domain-Constrained\\LID\\[-2pt]\footnotesize \{en, mr, gu\}};
+
+\node[block, below=0.8cm of lid] (stt) {Whisper-Large-v3-Turbo\\[-2pt]\footnotesize 809M params};
+
+\node[smallblock, left=0.5cm of stt] (lora_mr) {LoRA (mr)\\113\,MB};
+\node[smallblock, left=0.5cm of lora_mr] (lora_gu) {LoRA (gu)\\113\,MB};
+
+\node[block, below=0.8cm of stt] (llm) {Qwen3-14B LLM\\[-2pt]\footnotesize Error correction +\\English translation};
+
+\node[block, below=0.8cm of llm] (tts) {Indic Parler-TTS\\[-2pt]\footnotesize Speech synthesis\\(12 languages)};
+
+\node[block, right=of tts] (output) {Audio Output\\[-2pt]\footnotesize (44.1\,kHz WAV)};
+
+% Arrows
+\draw[arrow] (audio) -- (vad);
+\draw[arrow] (vad) -- (lid);
+\draw[arrow] (lid) -- node[right, label] {detected lang} (stt);
+\draw[arrow] (lora_mr) -- (stt);
+\draw[arrow] (lora_gu) -- (stt);
+\draw[arrow] (stt) -- node[right, label] {raw text} (llm);
+\draw[arrow] (llm) -- node[right, label] {cleaned + translated} (tts);
+\draw[arrow] (tts) -- (output);
+
+% Dynamic switching annotation
+\draw[dashed, gray, thick] (lid.south) -- ++(0,-0.2) -| node[near start, above, label] {adapter switch} (lora_mr.north);
+
+\end{tikzpicture}
+\caption{System architecture of the Indic Cognitive Speech Agent. Audio flows through five stages: VAD preprocessing, domain-constrained language identification, LoRA-adapted Whisper transcription, LLM error correction and translation, and TTS synthesis. Dashed line indicates the dynamic adapter switching triggered by the language detection result.}
+\label{fig:architecture}
+\end{figure}
+
+% ─── 3.1 VAD ─────────────────────────────────────────────────────────────────
+\subsection{Voice Activity Detection}
+\label{sec:vad}
+
+Raw audio recordings commonly contain leading and trailing silence, ambient noise segments, and pauses between sentences. Feeding these silent regions into the Whisper encoder wastes computation and can trigger hallucination---Whisper is known to generate phantom text (repetitive phrases, random English sentences) when its input contains extended silence.
+
+We use Silero VAD~\cite{silero_vad}, a lightweight pretrained voice activity detector, as a preprocessing step. The model identifies speech-containing segments in the input waveform, and we concatenate only those segments before passing the audio to the downstream modules. In practice, this trims 1--3 seconds of silence per clip, reducing both processing time and hallucination artifacts. The VAD model itself runs on GPU with negligible overhead (under 50\,ms per clip).
+
+% ─── 3.2 Domain-Constrained LID ─────────────────────────────────────────────
+\subsection{Domain-Constrained Language Identification}
+\label{sec:lid}
+
+Language identification is a prerequisite for routing audio to the correct LoRA adapter. Standard Whisper LID works by examining the decoder's first-step logits at the language token position, then selecting the highest-scoring language token from all 99+ supported languages. This is problematic for our use case: phonetically similar Indic languages like Marathi and Gujarati produce nearly identical acoustic features, and allowing the model to consider dozens of irrelevant languages (e.g., Urdu, Hindi, Bengali) introduces unnecessary confusion.
+
+Our approach restricts the logit comparison to only the three target language tokens:
+
+\begin{equation}
+\hat{l} = \arg\max_{l \in \{\texttt{en}, \texttt{mr}, \texttt{gu}\}} \text{logit}(\langle|l|\rangle)
+\label{eq:lid}
+\end{equation}
+
+where $\text{logit}(\langle|l|\rangle)$ is the decoder's output logit for the language token corresponding to language $l$, computed from the encoder output of the input audio. We feed the mel-spectrogram features through the encoder and a single decoder step with only the start-of-sequence token, then read off the logits at the three language token positions.
+
+This domain-constrained approach has a useful property: for typologically distinct languages, the logit gap is large (English typically scores 17--20 while Indic languages score around 5--9), making classification virtually perfect. The challenge arises with the Marathi--Gujarati pair, where logit differences can be as small as 0.04, reflecting a genuine acoustic similarity that no amount of prompting can resolve.
+
+During inference, if a LoRA adapter is loaded for the detected language, the system dynamically enables it; otherwise, the base model handles the transcription directly. Importantly, we disable adapter layers before running LID to ensure the language detection uses the unbiased base model.
+
+% ─── 3.3 LoRA Fine-Tuning ────────────────────────────────────────────────────
+\subsection{LoRA Fine-Tuning for Indic ASR}
+\label{sec:lora}
+
+We adapt the Whisper-Large-v3-Turbo model~\cite{openai_whisper_turbo} to Marathi and Gujarati using LoRA~\cite{hu2022lora}. The base model has 809 million parameters with a 4-layer decoder (distilled from the 32-layer Whisper-Large-v3), and we freeze all of them during training. LoRA injects trainable low-rank matrices into the self-attention layers:
+
+\begin{equation}
+W' = W + \Delta W = W + BA
+\label{eq:lora}
+\end{equation}
+
+where $W \in \mathbb{R}^{d \times k}$ is the frozen pretrained weight, $B \in \mathbb{R}^{d \times r}$ and $A \in \mathbb{R}^{r \times k}$ are the trainable low-rank matrices, and $r$ is the rank. The adapter is applied to the query and value projection matrices (\texttt{q\_proj}, \texttt{v\_proj}) of each attention layer.
+
+Table~\ref{tab:lora_config} lists the hyperparameters used. Each adapter totals approximately 113\,MB, which is about 7\% of the 1.6\,GB full model size. Training runs for 500 steps with a batch size of 16 and gradient accumulation of 2, taking roughly 30 minutes per language on a single NVIDIA RTX 5000 Ada GPU.
+
+\begin{table}[t]
+\centering
+\caption{LoRA fine-tuning hyperparameters.}
+\label{tab:lora_config}
+\begin{tabular}{ll}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Base model & \texttt{openai/whisper-large-v3-turbo} \\
+LoRA rank ($r$) & 8 \\
+LoRA alpha ($\alpha$) & 16 \\
+Dropout & 0.05 \\
+Target modules & \texttt{q\_proj}, \texttt{v\_proj} \\
+Learning rate & $1 \times 10^{-3}$ \\
+Warmup steps & 50 \\
+Max training steps & 500 \\
+Batch size & 16 (gradient accum.\ $\times 2$) \\
+Precision & FP16 \\
+Evaluation interval & Every 100 steps \\
+Adapter size & $\sim$113\,MB each \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A key design choice is that we train one adapter per language and dynamically switch between them at inference time. This means a single Whisper backbone in GPU memory can serve all three languages---English uses the base model directly, while Marathi and Gujarati each activate their respective adapter. The switching has zero latency cost because it only involves enabling or disabling the adapter layers, not loading new weights.
+
+% ─── 3.4 LLM Translation ────────────────────────────────────────────────────
+\subsection{LLM-Based Translation and Error Correction}
+\label{sec:llm}
+
+Raw STT output from acoustic models tends to contain phonetic errors that are characteristic of the language. For example, Whisper frequently produces ``\textit{kiva}'' instead of the correct Marathi word ``\textit{kimva}'' (meaning ``or''), or writes ``\textit{vichyar}'' instead of ``\textit{vichar}'' (meaning ``thought''). These are not random errors---they reflect genuine acoustic ambiguity in the input signal.
+
+We address this with a cognitive post-processing layer that uses Qwen3-14B~\cite{qwen3_2025}, accessed through the Weights \& Biases Inference API~\cite{wandb2024}. The LLM receives the raw transcription along with a structured system prompt that instructs it to:
+
+\begin{enumerate}[leftmargin=*]
+    \item Output a \texttt{[CLEANED]} line with the phonetically corrected native-language text.
+    \item Output an \texttt{[ENGLISH]} line with a fluent English translation.
+    \item Produce nothing else---no reasoning, no commentary.
+\end{enumerate}
+
+The system prompt also informs the LLM of the detected language and, optionally, a user-provided context string (e.g., ``discussing agriculture and rain damage in Gujarat''). This context acts as a lightweight form of retrieval-augmented generation, helping the model disambiguate homophones and domain-specific terminology.
+
+All LLM calls are traced through Weights \& Biases Weave for auditability, so we can inspect what the model was given and what it produced for any individual request.
+
+% ─── 3.5 TTS ─────────────────────────────────────────────────────────────────
+\subsection{Indic Text-to-Speech Synthesis}
+\label{sec:tts}
+
+The final stage converts text back into speech using AI4Bharat's Indic Parler-TTS~\cite{ai4bharat_indic_parler}, which supports 22 Indian languages plus English. The model generates audio conditioned on two inputs: the text to be spoken and a natural language description of the desired voice (e.g., ``A female speaker with a clear, pleasant voice, moderate speaking rate, and no background noise'').
+
+A notable integration challenge is that Parler-TTS uses two separate tokenizers. The voice description must be tokenized with a Flan-T5-Large tokenizer, while the spoken text uses the model's native Indic tokenizer. Routing both inputs through the same tokenizer---which would be the naive implementation---collapses the generation to a single default voice and produces garbled audio. We handle this by maintaining separate tokenization paths:
+
+\begin{lstlisting}[caption={Dual-tokenizer TTS integration (simplified).},label={lst:tts},language=Python,numbers=none]
+# Voice description -> Flan-T5 tokenizer
+desc_tokens = description_tokenizer(voice_desc)
+# Spoken text -> Indic tokenizer
+text_tokens = indic_tokenizer(text_to_speak)
+# Both passed to the generation model
+audio = model.generate(
+    input_ids=desc_tokens.input_ids,
+    prompt_input_ids=text_tokens.input_ids,
+)
+\end{lstlisting}
+
+The model produces 44.1\,kHz audio. We apply peak normalization (scaling to 95\% of the maximum amplitude) to prevent clipping before saving the output as a WAV file. Four voice presets are available to users: clear female, clear male, expressive female, and calm male.
+
+% ─── 3.6 User Interface ──────────────────────────────────────────────────────
+\subsection{Interactive Interface}
+\label{sec:ui}
+
+The entire pipeline is wrapped in a Gradio~\cite{gradio2023} web interface with two tabs: one for speech-to-text (with microphone input, language routing control, and optional RAG context) and one for text-to-speech (with language and voice preset selection). The application launches on the MBZUAI SLURM cluster and generates a public share link, enabling access from any browser without local GPU requirements.

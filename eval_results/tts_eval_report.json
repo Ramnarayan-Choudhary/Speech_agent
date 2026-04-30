@@ -1,0 +1,68 @@
+{
+    "overall_rtf": 0.817834895990642,
+    "avg_wer": 0.6615384615384615,
+    "avg_cer": 0.3888180023843412,
+    "total_samples": 6,
+    "details": [
+        {
+            "language": "en",
+            "original_text": "The quick brown fox jumps over the lazy dog.",
+            "transcribed_text": "The quick brown fox jumps over the lazy dog.",
+            "wer": 0.0,
+            "cer": 0.0,
+            "processing_time": 2.6651828698813915,
+            "audio_duration": 2.7980045351473923,
+            "rtf": 0.9525298606211858
+        },
+        {
+            "language": "en",
+            "original_text": "We are evaluating the text to speech engine for intelligibility.",
+            "transcribed_text": "We are evaluating the text to speech engine for intelligibility",
+            "wer": 0.1,
+            "cer": 0.015625,
+            "processing_time": 3.213142905384302,
+            "audio_duration": 3.9938321995464854,
+            "rtf": 0.8045262657127074
+        },
+        {
+            "language": "mr",
+            "original_text": "नमस्कार, मी मराठी बोलतो. आज हवामान खूप छान आहे.",
+            "transcribed_text": "तुमस काया मी महारची बोतो हाचावनाम खुद चान आएं।",
+            "wer": 1.0,
+            "cer": 0.48936170212765956,
+            "processing_time": 2.890278602950275,
+            "audio_duration": 3.599092970521542,
+            "rtf": 0.8030574999376708
+        },
+        {
+            "language": "mr",
+            "original_text": "हे एक चाचणी वाक्य आहे जे आपण तपासण्यासाठी वापरत आहोत.",
+            "transcribed_text": "ये एक चाथ नीबाक याहे चे अपर नप्र नप्रास अजा तीबापर ताहूट",
+            "wer": 1.1,
+            "cer": 0.6037735849056604,
+            "processing_time": 3.3553464910946786,
+            "audio_duration": 4.179591836734694,
+            "rtf": 0.8027928616388634
+        },
+        {
+            "language": "gu",
+            "original_text": "નમસ્તે, હું ગુજરાતી બોલું છું. આજે હવામાન ખૂબ સારું છે.",
+            "transcribed_text": "Namaste. Hume Gujarati bolu zha. Ajay Havaman Koobsavrche.",
+            "wer": 1.0,
+            "cer": 0.9272727272727272,
+            "processing_time": 3.3306066058576107,
+            "audio_duration": 4.20281179138322,
+            "rtf": 0.7924710339602071
+        },
+        {
+            "language": "gu",
+            "original_text": "આ એક પરીક્ષણ વાક્ય છે જેનો ઉપયોગ આપણે ચકાસણી માટે કરી રહ્યા છીએ.",
+            "transcribed_text": "I, એક પરીક્શેણ વાક યુ છે જેનો ઉપ્યો ગીક આપણે ચકાસરીનાજે ખળીરીરયા છીએ.",
+            "wer": 0.7692307692307693,
+            "cer": 0.296875,
+            "processing_time": 4.409075822681189,
+            "audio_duration": 5.5147392290249435,
+            "rtf": 0.7995075813332254
+        }
+    ]
+}

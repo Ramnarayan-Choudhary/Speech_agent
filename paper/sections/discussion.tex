@@ -1,0 +1,38 @@
+% ═══════════════════════════════════════════════════════════════
+%  7. Discussion
+% ═══════════════════════════════════════════════════════════════
+
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{What Worked and What Did Not}
+
+The system achieves its primary goal: a fully functional speech-to-speech loop for three languages running on a single GPU. Voice goes in, and voice comes out, with transcription and translation along the way. But the evaluation also exposed several areas where the current approach falls short, and we think being honest about these is more useful than cherry-picking favorable results.
+
+\paragraph{Domain-constrained LID works well---for English.} By restricting the language token search to just three candidates, we eliminated the noise that comes from Whisper considering 96+ irrelevant languages. English detection is essentially perfect, with logit gaps exceeding 20 points. This simple technique could be valuable in any deployment where the set of possible languages is known in advance.
+
+\paragraph{Marathi--Gujarati confusion is a hard ceiling.} The 50\%--60\% routing accuracy between these two languages is not something we can fix with better prompting or decoder tricks. The two languages share phonetic inventory, prosodic patterns, and even some vocabulary. When the decoder logits differ by only 0.04, the system is effectively guessing. The right solution is a dedicated acoustic language classifier trained specifically on Marathi--Gujarati discrimination, which we leave for future work.
+
+\paragraph{LoRA adapters deliver more value through hallucination suppression than WER improvement.} The in-domain WER gain (from baseline to fine-tuned) is modest. But the qualitative improvement---eliminating ghost text, preventing the model from inventing English sentences for Indic input---is substantial and practically important. A system that sometimes makes word-level errors is usable; one that hallucinates entire sentences is not.
+
+\paragraph{The LLM layer genuinely helps, but has its own failure modes.} Qwen3-14B successfully corrects phonetic errors that would persist through a pure ASR pipeline. The ``\textit{kiva}'' to ``\textit{kimva}'' corrections are real and meaningful. However, when the upstream STT produces severely degraded text (which happens on out-of-distribution audio), the LLM cannot recover---you cannot translate garbage, no matter how capable the translator. The LLM works best when the STT gets the text approximately right and just needs polish.
+
+\subsection{Limitations}
+
+Several limitations should be noted:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Training data size.} 160 samples per language is very small. While it is enough to demonstrate the approach, production deployment would need thousands of hours of diverse training data. The 43-point WER gap between in-domain and OOD evaluation underscores this.
+
+    \item \textbf{Evaluation scale.} Our BLEU and routing evaluations use only 10 samples per language, which limits statistical confidence. A larger evaluation set would provide more reliable estimates.
+
+    \item \textbf{Single GPU constraint.} The entire pipeline must fit in 32\,GB VRAM, which limits us to FP16 and prevents simultaneously loading the TTS model at full precision. Model parallelism or offloading strategies could help.
+
+    \item \textbf{TTS quality.} While the Indic Parler-TTS produces intelligible audio, the voice quality for Indic languages is noticeably less natural than for English. This likely reflects the relative scarcity of high-quality Indic speech data used in training the TTS model.
+
+    \item \textbf{No real-time streaming.} The current system processes audio in batch mode. For conversational applications, a streaming architecture (processing audio chunks as they arrive) would be necessary.
+\end{itemize}
+
+\subsection{Ethical Considerations and AI Disclosure}
+
+This project was developed with the assistance of AI coding tools for parts of the implementation. Specifically, AI tools were used for code scaffolding, debugging, and documentation generation, while the core architectural decisions, experiment design, and analysis were performed by the author. The system itself should be used responsibly: speech-to-speech translation can enable communication across language barriers, but automated translation can also introduce errors that could have consequences in high-stakes domains (healthcare, legal). Any deployment should include human verification for critical communications.

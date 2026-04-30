@@ -1,0 +1,14 @@
+% ═══════════════════════════════════════════════════════════════
+%  8. Conclusion
+% ═══════════════════════════════════════════════════════════════
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented an end-to-end speech-to-speech agent for low-resource Indian languages that chains five neural components---voice activity detection, domain-constrained language identification, LoRA-adapted Whisper transcription, LLM-based error correction and translation, and Indic text-to-speech synthesis---into a single interactive pipeline. The system handles Marathi, Gujarati, and English, runs on a single GPU, and is accessible through a web interface.
+
+Our experiments showed four main findings. First, the full loop works: voice goes in, processed text and voice come out, for all three languages. Second, per-language LoRA adapters on a shared Whisper backbone are a practical shape for low-resource ASR---they converge cleanly on small data, suppress hallucination, and use 60\% less GPU memory than separate models. Third, the Marathi--Gujarati confusion in decoder-logit-based language identification is fundamentally acoustic, not algorithmic, and requires a dedicated classifier to resolve. Fourth, autoregressive TTS is the dominant latency cost in the speech-to-speech loop and the most natural target for optimization.
+
+Looking ahead, three concrete directions would improve the system most. \textbf{More diverse training data} is the highest-leverage change: the 43-point WER gap between in-domain and OOD evaluation shows that the model has capacity that is not being utilized. Common Voice and other natural speech corpora would close this gap. \textbf{An acoustic LID head} for Marathi--Gujarati discrimination---for example, a small ECAPA-TDNN classifier over acoustic embeddings---would break through the decoder-logit ceiling. Finally, \textbf{streaming TTS} would remove the dominant latency stage and bring the full loop closer to interactive, conversational use.
+
+All code, trained adapters, and evaluation scripts are available at: \url{https://github.com/Ramnarayan-Choudhary/Speech_agent}.

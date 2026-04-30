@@ -1,0 +1,125 @@
+% ═══════════════════════════════════════════════════════════════
+%  5. Results
+% ═══════════════════════════════════════════════════════════════
+
+\section{Results}
+\label{sec:results}
+
+We report results from a full pipeline evaluation run on the FLEURS test split with 50 samples per language. All numbers were collected in a single end-to-end run on the RTX 5000 Ada GPU.
+
+% ─── 5.1 STT Accuracy ───────────────────────────────────────────────────────
+\subsection{Speech-to-Text Accuracy}
+
+Table~\ref{tab:stt_results} presents the WER and CER for each language. English achieves a WER of 25.6\% using the base Whisper-Large-v3-Turbo model without any adaptation, which is within the expected range for this model on FLEURS. The Indic languages show substantially higher error rates: 72.1\% WER for Marathi and 75.0\% for Gujarati.
+
+\begin{table}[t]
+\centering
+\caption{Speech-to-text accuracy on FLEURS test split ($n = 50$ per language).}
+\label{tab:stt_results}
+\begin{tabular}{lccccl}
+\toprule
+\textbf{Language} & \textbf{WER} $\downarrow$ & \textbf{CER} $\downarrow$ & \textbf{Samples} & \textbf{Avg Latency} & \textbf{Model} \\
+\midrule
+English   & 25.6\% & 7.7\%  & 50 & 1.42\,s & Turbo Base \\
+Marathi   & 72.1\% & 21.1\% & 50 & 3.83\,s & Turbo + LoRA(mr) \\
+Gujarati  & 75.0\% & 33.3\% & 50 & 6.87\,s & Turbo + LoRA(gu) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These Indic WER numbers deserve careful interpretation. The high values are primarily driven by \textbf{domain mismatch}: the LoRA adapters were trained on IndicSpeech (controlled lab recordings with limited vocabulary) and tested on FLEURS (diverse speakers, news topics, global content). On the IndicSpeech validation split itself, the same adapters achieve roughly 29\% WER---a 43-point gap that indicates the error is dominated by distribution shift, not model capacity.
+
+Furthermore, CER is a more meaningful metric for Indic scripts than WER. Marathi CER of 21.1\% means approximately 79\% of characters are transcribed correctly. Morphological variations---for instance, the model writing ``\textit{vichyar}'' instead of ``\textit{vichar}'' (a single character difference)---count as a full word error in WER but represent only a minor character-level mistake that the LLM layer can often correct.
+
+% ─── 5.2 Language Routing ────────────────────────────────────────────────────
+\subsection{Language Routing Accuracy}
+
+Table~\ref{tab:routing} shows the routing accuracy when the system operates in fully autonomous mode (no language hint from the user). Overall accuracy is 70\% across 30 test samples.
+
+\begin{table}[t]
+\centering
+\caption{Autonomous language routing accuracy ($n = 10$ per language).}
+\label{tab:routing}
+\begin{tabular}{lccl}
+\toprule
+\textbf{Language} & \textbf{Accuracy} & \textbf{Correct / Total} & \textbf{Logit Behavior} \\
+\midrule
+English   & 100\% & 10/10 & 20+ point gap \\
+Gujarati  & 60\%  & 6/10  & Confused with Marathi \\
+Marathi   & 50\%  & 5/10  & Confused with Gujarati \\
+\midrule
+\textbf{Overall} & \textbf{70\%} & \textbf{21/30} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The most striking finding is the contrast between English and the two Indic languages. English produces a massive logit separation: the \texttt{en} token typically scores 17--20 while \texttt{mr} and \texttt{gu} score around -6 to 6. This makes English detection effectively perfect.
+
+For the Marathi--Gujarati pair, however, the logit gap can be as small as 0.04. In one concrete example from the evaluation, a Gujarati audio clip produced logits of $\texttt{gu} = 9.23$, $\texttt{mr} = 9.16$, $\texttt{en} = 5.98$. The system correctly chose Gujarati, but the margin was negligible. This confusion is not a bug in our algorithm---it reflects genuine phonetic similarity between the two languages that acoustic features alone cannot reliably resolve. A dedicated acoustic language classifier (e.g., ECAPA-TDNN trained on Marathi/Gujarati data) would likely break through this ceiling.
+
+% ─── 5.3 Translation Quality ────────────────────────────────────────────────
+\subsection{Translation Quality}
+
+\begin{table}[t]
+\centering
+\caption{LLM translation quality (BLEU) for Indic-to-English.}
+\label{tab:translation}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Direction} & \textbf{BLEU} & \textbf{Samples Evaluated} \\
+\midrule
+Marathi $\rightarrow$ English  & 0.59 & 10 \\
+Gujarati $\rightarrow$ English & 0.34 & 10 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:translation} shows the BLEU scores for the LLM translation layer. Marathi-to-English achieves 0.59, which indicates reasonably fluent translations. The lower Gujarati score (0.34) is partly explained by the higher upstream STT error rate---the LLM receives noisier input and has less material to work with.
+
+Beyond the quantitative scores, we observe that the LLM genuinely corrects phonetic errors rather than merely paraphrasing. For example, it fixes ``\textit{kiva}'' to ``\textit{kimva}'' in Marathi and ``\textit{upyog}'' to the correct Gujarati script form. It also removes trailing repetitions that Whisper sometimes generates. These corrections would not be captured by a simple machine translation system that takes text at face value.
+
+% ─── 5.4 TTS Health ──────────────────────────────────────────────────────────
+\subsection{TTS Health Check}
+
+\begin{table}[t]
+\centering
+\caption{TTS health check results across four languages.}
+\label{tab:tts}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Language} & \textbf{Status} & \textbf{Audio Duration} & \textbf{Generation Time} & \textbf{Sample Rate} \\
+\midrule
+Marathi  & Pass & 3.40\,s & 42.27\,s$^*$ & 44.1\,kHz \\
+Gujarati & Pass & 3.49\,s & 5.16\,s      & 44.1\,kHz \\
+Hindi    & Pass & 2.60\,s & 3.95\,s      & 44.1\,kHz \\
+English  & Pass & 3.10\,s & 4.17\,s      & 44.1\,kHz \\
+\bottomrule
+\multicolumn{5}{l}{\footnotesize $^*$First call includes model loading; subsequent calls take $\sim$4--5\,s.}
+\end{tabular}
+\end{table}
+
+All four tested languages produce valid, natural-sounding audio (Table~\ref{tab:tts}). The Marathi generation time of 42.27\,s is a cold-start artifact---the Parler-TTS model is loaded lazily on the first TTS request. After initialization, generation times stabilize around 4--5\,s per utterance.
+
+% ─── 5.5 Latency ────────────────────────────────────────────────────────────
+\subsection{End-to-End Latency}
+
+\begin{table}[t]
+\centering
+\caption{End-to-end latency profile (STT pipeline only, $n = 5$).}
+\label{tab:latency}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Time} \\
+\midrule
+Average  & 2.96\,s \\
+Median   & 2.99\,s \\
+Min      & 2.07\,s \\
+Max      & 3.96\,s \\
+Std Dev  & 0.62\,s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:latency} shows that the STT pipeline (VAD + language detection + transcription + LLM) processes a typical audio clip in under 3 seconds. For a 10-second input, this represents roughly 3$\times$ real-time processing---fast enough for interactive use. The TTS stage adds another 4--5 seconds on top, making the full speech-to-speech loop take approximately 8 seconds total.
+
+A live demonstration processed a 20.6-second Gujarati recording end-to-end: Silero VAD trimmed it to 17.9\,s (removing 2.7\,s of silence), the LID correctly identified Gujarati, the LoRA-adapted model transcribed the text, Qwen3-14B cleaned and translated it, and Parler-TTS synthesized 6.3\,s of English speech output---all in 8.02\,s of wall-clock time (2.5$\times$ real-time).

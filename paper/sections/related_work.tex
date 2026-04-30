@@ -1,0 +1,21 @@
+% ═══════════════════════════════════════════════════════════════
+%  2. Related Work
+% ═══════════════════════════════════════════════════════════════
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Large-scale speech recognition.}
+The Whisper model family~\cite{radford2023whisper} demonstrated that training a single encoder--decoder Transformer on 680,000 hours of weakly supervised audio produces a robust multilingual ASR system. The original Whisper models range from 39M to 1.55B parameters and support 99 languages. The more recent Whisper-Large-v3-Turbo variant~\cite{openai_whisper_turbo} reduces the decoder from 32 layers to 4, cutting inference time by roughly 6--8$\times$ while retaining most of the accuracy. However, all of these models are trained predominantly on English and Western European data; low-resource Indic languages remain underserved. Meta's Massively Multilingual Speech (MMS) project~\cite{pratap2023mms} scaled coverage to 1,100+ languages but with variable quality for Indic tongues.
+
+\paragraph{Parameter-efficient fine-tuning.}
+Full fine-tuning of large pretrained models is computationally expensive and requires storing a separate copy of all parameters for each downstream task. LoRA~\cite{hu2022lora} addresses this by freezing the pretrained weights and injecting small trainable rank-decomposition matrices into the Transformer's attention layers. This reduces trainable parameters by orders of magnitude---for a rank-32 adaptation on Whisper-Large-v3-Turbo, the adapter is roughly 113\,MB compared to the 1.6\,GB full model. The PEFT library~\cite{peft2023} makes it straightforward to apply LoRA, prefix tuning, and related methods to Hugging Face models. Several recent works have applied LoRA to Whisper for low-resource ASR, though most focus on European or East Asian languages rather than Indic ones.
+
+\paragraph{Indic speech resources.}
+The landscape of speech data for Indian languages has improved considerably in recent years. Common Voice~\cite{commonvoice2020} provides crowdsourced recordings for many Indic languages, though the total hours remain limited compared to English. The IndicSpeech corpus~\cite{indicspeech2022} offers cleaner, lab-recorded dictation-style data in several Indian languages, which we use for our fine-tuning experiments. On the evaluation side, Google FLEURS~\cite{conneau2023fleurs} provides a standardized few-shot evaluation benchmark covering 102 languages including Marathi and Gujarati, which gives us a consistent out-of-distribution test set.
+
+\paragraph{Text-to-speech for Indian languages.}
+Neural TTS has advanced rapidly, but support for Indian languages has lagged behind English and Mandarin. AI4Bharat's Indic Parler-TTS~\cite{ai4bharat_indic_parler} adapts the Parler-TTS framework~\cite{lyth2024parlertts}---which uses natural language descriptions to control voice characteristics---to 22 Indian languages. This is notable because it allows voice style control (pitch, speed, clarity) through text prompts rather than reference audio clips. However, integrating it into a pipeline requires careful handling of its dual-tokenizer architecture, where the voice description and the spoken text must pass through separate encoding paths.
+
+\paragraph{Language identification.}
+Traditional language identification for speech relies on dedicated classifiers trained on acoustic features or learned embeddings (e.g., ECAPA-TDNN). Whisper's built-in LID uses the decoder's language token logits, effectively checking all 99+ supported languages. We take a different approach: rather than building a separate classifier, we constrain Whisper's decoder logits to only the languages relevant to our deployment scenario. This ``domain-constrained'' LID eliminates irrelevant confusion classes and works well for distinguishing typologically distant languages, though it struggles with phonetically similar pairs.

@@ -1,0 +1,38 @@
+% ═══════════════════════════════════════════════════════════════
+%  4. Experimental Setup
+% ═══════════════════════════════════════════════════════════════
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\subsection{Training Data}
+
+We train the LoRA adapters on IndicSpeech 2022~\cite{indicspeech2022}, a speech corpus of dictation-style recordings in Indian languages. For each language (Marathi and Gujarati), we use 160 training samples and 40 validation samples. The audio is resampled to 16\,kHz mono and converted to 80-bin log-Mel spectrogram features as required by Whisper's encoder. English does not receive a LoRA adapter; the base Whisper-Large-v3-Turbo model handles it directly.
+
+The IndicSpeech data is relatively clean and domain-restricted: speakers read prepared sentences in a controlled recording environment, producing consistent audio quality with minimal background noise. This makes it well-suited for training but creates a domain mismatch with more diverse test conditions, which we address explicitly in our evaluation.
+
+\subsection{Evaluation Benchmark}
+
+We evaluate on Google FLEURS~\cite{conneau2023fleurs}, a multilingual speech benchmark that covers 102 languages with a standardized test split. We use 50 samples per language from the test split for Marathi (\texttt{mr\_in}), Gujarati (\texttt{gu\_in}), and English (\texttt{en\_us}). 
+
+FLEURS is deliberately different from our training distribution: it contains diverse speakers reading news-style content with varying recording conditions. This out-of-distribution evaluation gives us a realistic picture of how the system would perform on unseen audio, even if the absolute numbers are higher than what we would see on in-domain data.
+
+\subsection{Hardware and Software}
+
+All experiments run on the MBZUAI SLURM computing cluster, using a single NVIDIA RTX 5000 Ada GPU with 32\,GB VRAM. The software stack consists of PyTorch 2.x with SDPA (Scaled Dot-Product Attention) for efficient inference, Hugging Face Transformers 4.48 for model management, and PEFT 0.18 for LoRA adaptation~\cite{peft2023, wolf2020transformers}. Models are loaded in FP16 precision to fit within GPU memory.
+
+\subsection{Evaluation Metrics}
+
+We measure the system along five dimensions:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{STT accuracy}: Word Error Rate (WER) and Character Error Rate (CER) computed using the \texttt{jiwer} library against FLEURS reference transcriptions. CER is particularly important for Indic scripts, where inflectional morphology causes single-character differences to inflate WER disproportionately.
+
+    \item \textbf{Language routing accuracy}: The fraction of test samples where the domain-constrained LID correctly identifies the spoken language, tested on 10 samples per language in autonomous mode.
+
+    \item \textbf{Translation quality}: BLEU score (via SacreBLEU) comparing the LLM's English translations against FLEURS English reference sentences, evaluated on 10 samples per Indic language.
+
+    \item \textbf{TTS health}: Whether the TTS engine produces valid, non-empty audio for each supported language, along with generation latency.
+
+    \item \textbf{End-to-end latency}: Wall-clock time from audio input to final output, profiled over 5 samples to capture the mean, median, and variance.
+\end{enumerate}
